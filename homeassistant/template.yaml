@@ -1,0 +1,41 @@
+- trigger:
+    - platform: mqtt
+      topic: paradox/events/1
+    - platform: mqtt
+      topic: paradox/events/0
+  binary_sensor:
+    - name: "Front door"
+      unique_id: paradox_zone_1
+      device_class: motion
+      state: >-
+        {% if trigger.topic == 'paradox/events/1' and trigger.payload_json.value == '1' %}
+          on
+        {% elif trigger.topic == 'paradox/events/0' and trigger.payload_json.value == '1' %}
+          off
+        {% else %}
+          {{ states('binary_sensor.front_door') }}
+        {% endif %}
+
+    - name: "Laundry"
+      unique_id: paradox_zone_2
+      device_class: motion
+      state: >-
+        {% if trigger.topic == 'paradox/events/1' and trigger.payload_json.value == '2' %}
+          on
+        {% elif trigger.topic == 'paradox/events/0' and trigger.payload_json.value == '2' %}
+          off
+        {% else %}
+          {{ states('binary_sensor.laundry') }}
+        {% endif %}
+
+    - name: "Living Room"
+      unique_id: paradox_zone_3
+      device_class: motion
+      state: >-
+        {% if trigger.topic == 'paradox/events/1' and trigger.payload_json.value == '3' %}
+          on
+        {% elif trigger.topic == 'paradox/events/0' and trigger.payload_json.value == '3' %}
+          off
+        {% else %}
+          {{ states('binary_sensor.living_room') }}
+        {% endif %}

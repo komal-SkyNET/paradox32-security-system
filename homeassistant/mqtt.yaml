@@ -1,0 +1,45 @@
+alarm_control_panel:
+  - name: "Home Security Control"
+    unique_id: paradox
+    state_topic: "paradox/events/2"
+    value_template: >
+      {% set val = value_json.value %}
+      {% if val == '11' %}
+        disarmed
+      {% elif val == '12' %}
+        armed_away
+      {% elif val == '13' %}
+        pending
+      {% elif val == '14' %}
+        pending
+      {% elif val in ['2', '3', '4', '5', '6'] %}
+        triggered
+      {% endif %}
+    command_topic: "paradox/commands"
+    command_template: >
+      {
+        "command": "{% if action == 'ARM_AWAY' %}arm{% elif action == 'ARM_HOME' %}stay{% elif action == 'ARM_NIGHT' %}sleep{% elif action == 'DISARM' %}disarm{% endif %}",
+        "password": "{{ code if code else '0000' }}"
+      }
+    code: "0000"
+    code_arm_required: false
+    code_disarm_required: true
+
+binary_sensor:
+  - name: "Paradox Entry Delay"
+    unique_id: paradox_entry_delay
+    state_topic: "paradox/events/2"
+    value_template: "{{ 'ON' if value_json.value == '13' else 'OFF' }}"
+
+  - name: "Paradox Exit Delay"
+    unique_id: paradox_exit_delay
+    state_topic: "paradox/events/2"
+    value_template: "{{ 'ON' if value_json.value == '14' else 'OFF' }}"
+
+  - name: "Paradox Bell Status"
+    unique_id: paradox_bell_status
+    state_topic: "paradox/events/3"
+    payload_on: "1"
+    payload_off: "0"
+    value_template: "{{ value_json.value }}"
+    device_class: sound

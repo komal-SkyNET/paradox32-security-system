@@ -1,0 +1,108 @@
+- alias: Alarm Status Change Notification
+  description: Notify when alarm status changes with friendly messages
+  triggers:
+    - trigger: state
+      entity_id: alarm_control_panel.paradox
+  conditions: []
+  actions:
+    - action: notify.mobile_app_your_phone
+      data:
+        title: |-
+          {% if trigger.to_state.state == 'armed_away' %}
+            🔒 Alarm Armed
+          {% elif trigger.to_state.state == 'armed_home' %}
+            🏠 Alarm Armed (Home)
+          {% elif trigger.to_state.state == 'armed_night' %}
+            🌙 Alarm Armed (Night)
+          {% elif trigger.to_state.state == 'disarmed' %}
+            🔓 Alarm Disarmed
+          {% elif trigger.to_state.state == 'triggered' %}
+            🚨 ALARM TRIGGERED
+          {% elif trigger.to_state.state == 'arming' %}
+            ⏳ Arming...
+          {% elif is_state('binary_sensor.paradox_exit_delay', 'on') %}
+            ⏰ Exit Delay
+          {% elif is_state('binary_sensor.paradox_entry_delay', 'on') %}
+            ⏰ Entry Delay
+          {% else %}
+            ⚠️ Alarm Status Changed
+          {% endif %}
+        message: |-
+          {% if trigger.to_state.state == 'armed_away' %}
+            Your home is secured
+          {% elif trigger.to_state.state == 'armed_home' %}
+            Home mode active
+          {% elif trigger.to_state.state == 'armed_night' %}
+            Night mode active
+          {% elif trigger.to_state.state == 'disarmed' %}
+            Welcome home
+          {% elif trigger.to_state.state == 'triggered' %}
+            ⚠️ ALARM ACTIVATED - Check your home immediately!
+          {% elif trigger.to_state.state == 'exit_delay' %}
+            Exit delay - Arming..
+          {% elif trigger.to_state.state == 'entry_delay' %}
+            Entry delay - Disarm now to prevent alarm 
+          {% else %}
+            Status: {{ trigger.to_state.state }}
+          {% endif %}
+  mode: queued
+  max: 5
+- alias: Auto-Arm Alarm When Truly Away
+  description: Automatically arm alarm if I'm away for 5 min and auto-arm is enabled
+  triggers:
+  - trigger: state
+    entity_id: sensor.your_phone_wi_fi_connection
+    from: YourHomeNetwork
+    for: 00:05:00
+    id: wifi_name
+  - trigger: state
+    entity_id: sensor.your_phone_wi_fi_bssid
+    from: aa:bb:cc:dd:ee:ff
+    for: 00:05:00
+    id: wifi_bssid
+  conditions:
+  - condition: state
+    entity_id: input_boolean.auto_arm
+    state: 'on'
+  - type: is_battery_level
+    condition: device
+    device_id: your_device_id_here
+    entity_id: your_entity_id_here
+    domain: sensor
+    above: 2
+  actions:
+  - action: notify.mobile_app_your_phone
+    data:
+      title: "\U0001F512 Engaging Auto-Arm"
+      message: You've been away for 5 minutes. Arming central security now.
+  - action: alarm_control_panel.alarm_arm_away
+    target:
+      entity_id: alarm_control_panel.paradox
+    data:
+      code: '0000'
+  mode: single
+- alias: Request Alarm Status When Unknown
+  description: Send MQTT command to get alarm status when panel state is unknown
+  triggers:
+  - trigger: state
+    entity_id:
+    - alarm_control_panel.paradox
+    to: unknown
+    for:
+      hours: 0
+      minutes: 0
+      seconds: 3
+  - trigger: homeassistant
+    event: start
+  - trigger: event
+    event_type: automation_reloaded
+  conditions:
+  - condition: state
+    entity_id: alarm_control_panel.paradox
+    state: unknown
+  actions:
+  - action: mqtt.publish
+    data:
+      topic: paradox/commands
+      payload: '{"command": "status-getarmstatus", "password": "0000"}'
+  mode: single
