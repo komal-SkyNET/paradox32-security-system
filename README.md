@@ -22,11 +22,53 @@ An ESP32-based bridge that connects Paradox alarm systems to MQTT, enabling seam
 
 ### Wiring
 
-| ESP32 Pin | Paradox Panel | Purpose |
-|-----------|---------------|---------|
-| GPIO 16   | Panel TX      | RX (receive from panel) |
-| GPIO 17   | Panel RX      | TX (transmit to panel) |
-| GND       | Panel GND     | Common ground |
+> **⚠️** All wire connections you do at your own risk. Improper wiring may damage your equipment/board. Disconnect power before wiring.
+
+
+**Option 1: With a bi-directional level shifter (Recommended)**
+
+- HV - 5V logic to Paradox system
+- LV - 3.3V logic to ESP GPIO/UART
+
+<img src="images/wiring_with_level_shifter.jpg" width="600">
+
+**Option 2: Direct Connection (without Level Shifter)**
+
+<img src="images/wiring_without_level_shifter.jpg" width="600">
+
+#### Wiring Diagram
+
+```
+Paradox Panel                                Level Shifter         ESP32
+┌──────────┐                                ┌──────────┐          ┌──────────┐
+│ Rx       ├────────────────────────────────┤ HV2  LV2 ├──────────┤ GPIO17   │
+│          │                                │          │          │ (TX)     │
+│ Tx       ├────────────────────────────────┤ HV1  LV1 ├──────────┤ GPIO16   │
+│          │                                │          │          │ (RX)     │
+│ GND      ├───┬────────────────────────────┤  GND GND ├──────────┤ GND      │
+│          │   │                            │          │          │          │
+│ AUX+ 12V ├───┼──┐                         │  HV  5V  ├─┐        │          │
+│          │   │  │                         │          │ │        │          │
+└──────────┘   │  │   Buck Converter        │  LV  3.3V├─┼─┐      │          │
+               │  │  ┌──────────┐           └──────────┘ │ │      │          │
+               │  └──┤ IN+      │                        │ │      │          │
+               │     │          │              ┌─────────┘ │      │          │
+               └─────┤ IN-/GND  │              │           └──────┤ 3.3V     │
+                     │          │              │                  │          │
+                     │  OUT(5V) ├──────────────┴──────────────────┤ VIN      │
+                     └──────────┘                                 │          │
+                                                                  └──────────┘
+```
+
+**Connections summary:**
+- Panel AUX+ 12V → Buck converter input
+- Buck converter 5V shared to:
+  - ESP32 VIN
+  - Level shifter HV power
+- ESP32 3.3V → Level shifter LV power
+- Panel TX → Level shifter HV1 → LV1 → ESP32 GPIO16 (RX)
+- ESP32 GPIO17 (TX) → Level shifter LV2 → HV2 → Panel RX
+- All grounds connected together
 
 ## Installation
 
