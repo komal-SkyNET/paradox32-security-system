@@ -1,5 +1,7 @@
 # Release Notes
 
+## v1.0.1 - Fix config.h and add defaults
+
 ## v1.0.0 - First Production Release (October 2025)
 
 🎉 **Production Ready** - Out of incubator, this marks the first stable release of the Paradox MQTT / Home Assistant Bridge.
